@@ -194,6 +194,8 @@ namespace PROBot.Scripting
             _lua.Globals["isNight"] = new Func<bool>(IsNight);
             _lua.Globals["isOutside"] = new Func<bool>(IsOutside);
             _lua.Globals["isAutoEvolve"] = new Func<bool>(IsAutoEvolve);
+            _lua.Globals["isTeamInspectionEnabled"] = new Func<bool>(IsTeamInspectionEnabled);
+
 
             _lua.Globals["isCurrentPCBoxRefreshed"] = new Func<bool>(IsCurrentPCBoxRefreshed);
             _lua.Globals["getCurrentPCBoxId"] = new Func<int>(GetCurrentPCBoxId);
@@ -284,7 +286,8 @@ namespace PROBot.Scripting
             _lua.Globals["disablePrivateMessage"] = new Func<bool>(DisablePrivateMessage);
             _lua.Globals["enableAutoEvolve"] = new Func<bool>(EnableAutoEvolve);
             _lua.Globals["disableAutoEvolve"] = new Func<bool>(DisableAutoEvolve);
-
+            _lua.Globals["disableTeamInspection"] = new Func<bool>(DisableTeamInspection);
+            _lua.Globals["enableTeamInspection"] = new Func<bool>(EnableTeamInspection);
             // Path functions
             _lua.Globals["pushDialogAnswer"] = new Action<DynValue>(PushDialogAnswer);
 
@@ -320,6 +323,9 @@ namespace PROBot.Scripting
             // File editing actions
             _lua.Globals["logToFile"] = new Action<string, DynValue, bool>(LogToFile);
             _lua.Globals["readLinesFromFile"] = new Func<string, string[]>(ReadLinesFromFile);
+
+            // Taos
+            _lua.Globals["getSpawnList"] = new Func<List<Dictionary<string, object>>>(GetSpawnList);
 
             foreach (string content in _libsContent)
             {
@@ -466,6 +472,31 @@ namespace PROBot.Scripting
                 digSpots.Add(npcData);
             }
             return digSpots;
+        }
+
+        // API return an array of all known pokémons with their properties on the current map.
+        /* format : {index = {  "name" = string name,
+         *                      "caught" = boolean caught,
+         *                      "member" = boolean member,
+         *                      "surf" = boolean surf,
+         *                      "fish" = boolean fish,
+         *                      "hitem = boolean hitem}}
+         */
+        private List<Dictionary<string, object>> GetSpawnList()
+        {
+            var spawnList = new List<Dictionary<string, object>>();
+            foreach (PokemonSpawn pkmspwn in Bot.Game.SpawnList)
+            {
+                var spawnData = new Dictionary<string, object>();
+                spawnData["name"] = pkmspwn.name;
+                spawnData["caught"] = pkmspwn.captured;
+                spawnData["surf"] = pkmspwn.surf;
+                spawnData["member"] = pkmspwn.msonly;
+                spawnData["fish"] = pkmspwn.fish;
+                spawnData["hitem"] = pkmspwn.hitem;
+                spawnList.Add(spawnData);
+            }
+            return spawnList;
         }
 
         // API return an array of all usable Headbutt trees on the currrent map. format : {index = {"x" = x, "y" = y}}
@@ -2765,6 +2796,24 @@ namespace PROBot.Scripting
             }
 
             Bot.TextOptions[index].Description = content;
+        }
+
+        // API: Return the state of the team inspection
+        private bool IsTeamInspectionEnabled()
+        {
+            return Bot.Game.IsTeamInspectionEnabled;
+        }
+
+        // API: Disable team inspection
+        private bool DisableTeamInspection()
+        {
+            return Bot.Game.DisableTeamInspection();
+        }
+
+        // API: Enable team inspection
+        private bool EnableTeamInspection()
+        {
+            return Bot.Game.EnableTeamInspection();
         }
     }
 }
