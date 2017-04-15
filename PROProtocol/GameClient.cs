@@ -13,7 +13,6 @@ namespace PROProtocol
         public bool IsAuthenticated { get; private set; }
         public string PlayerName { get; private set; }
 
-
         public int PlayerX { get; private set; }
         public int PlayerY { get; private set; }
         public string MapName { get; private set; }
@@ -65,8 +64,6 @@ namespace PROProtocol
         public event Action LoggedIn;
         public event Action<AuthenticationResult> AuthenticationFailed;
         public event Action<int> QueueUpdated;
-
-        public event Action<bool> TeamInspectionChanged;
 
         public event Action<string, int, int> PositionUpdated;
         public event Action<string, int, int> TeleportationOccuring;
