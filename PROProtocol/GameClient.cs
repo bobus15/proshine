@@ -13,6 +13,7 @@ namespace PROProtocol
         public bool IsAuthenticated { get; private set; }
         public string PlayerName { get; private set; }
 
+
         public int PlayerX { get; private set; }
         public int PlayerY { get; private set; }
         public string MapName { get; private set; }
@@ -21,6 +22,7 @@ namespace PROProtocol
         public int PokedexOwned { get; private set; }
         public int PokedexSeen { get; private set; }
         public int PokedexEvolved { get; private set; }
+        public List<PokemonSpawn> SpawnList { get; private set; }
 
         public bool IsInBattle { get; private set; }
         public bool IsSurfing { get; private set; }
@@ -30,6 +32,7 @@ namespace PROProtocol
         public bool CanUseCut { get; private set; }
         public bool CanUseSmashRock { get; private set; }
         public bool IsPrivateMessageOn { get; private set; }
+        public bool IsTeamInspectionEnabled { get; private set; }
 
         public int Money { get; private set; }
         public int Coins { get; private set; }
@@ -63,12 +66,15 @@ namespace PROProtocol
         public event Action<AuthenticationResult> AuthenticationFailed;
         public event Action<int> QueueUpdated;
 
+        public event Action<bool> TeamInspectionChanged;
+
         public event Action<string, int, int> PositionUpdated;
         public event Action<string, int, int> TeleportationOccuring;
         public event Action<string> MapLoaded;
         public event Action<List<Npc>> NpcReceived;
         public event Action PokemonsUpdated;
         public event Action InventoryUpdated;
+        public event Action<List<PokemonSpawn>> SpawnListUpdated;
         public event Action BattleStarted;
         public event Action<string> BattleMessage;
         public event Action BattleEnded;
@@ -177,6 +183,7 @@ namespace PROProtocol
             Players = new Dictionary<string, PlayerInfos>();
             PCGreatestUid = -1;
             IsPrivateMessageOn = true;
+            IsTeamInspectionEnabled = true;
         }
 
         public void Open()
@@ -1104,6 +1111,9 @@ namespace PROProtocol
                 case "m":
                     OnPCBox(data);
                     break;
+                case "k":
+                    LoadPokemons(data);
+                    break;
                 default:
 #if DEBUG
                     Console.WriteLine(" ^ unhandled /!\\");
@@ -1873,5 +1883,75 @@ namespace PROProtocol
             _mapClient.DownloadMap(MapName);
             Players.Clear();
         }
+
+        private void LoadPokemons(string[] data)
+        {
+            string[] sdata = data[1].Split(',');
+            SpawnList = new List<PokemonSpawn>();
+            for (int i = 1; i < sdata.Length - 1; i++)
+            {
+                bool fish = false;
+                bool surf = false;
+                bool hitem = false;
+                bool msonly = false;
+                bool captured = false;
+
+                if (sdata[i].Contains("f"))
+                {
+                    fish = true;
+                    sdata[i] = sdata[i].Replace("f", string.Empty);
+                }
+
+                if (sdata[i].Contains("i"))
+                {
+                    hitem = true;
+                    sdata[i] = sdata[i].Replace("i", string.Empty);
+                }
+
+                if (sdata[i].Contains("s"))
+                {
+                    surf = true;
+                    sdata[i] = sdata[i].Replace("s", string.Empty);
+                }
+
+                if (sdata[i].Contains("m"))
+                {
+                    msonly = true;
+                    sdata[i] = sdata[i].Replace("m", string.Empty);
+                }
+
+                if (sdata[i].Contains("c"))
+                {
+                    captured = true;
+                    sdata[i] = sdata[i].Replace("c", string.Empty);
+                }
+
+                // Shit for ms color lol
+                if (sdata[i].Contains("x"))
+                {
+                    sdata[i] = sdata[i].Replace("x", string.Empty);
+                }
+                PokemonSpawn pokeaadd = new PokemonSpawn(Convert.ToInt32(sdata[i]), captured, surf, fish, hitem, msonly);
+               
+                SpawnList.Add(pokeaadd);
+            }
+            SpawnListUpdated?.Invoke(SpawnList);
+
+        }
+
+        public bool DisableTeamInspection()
+        {
+            IsTeamInspectionEnabled = false;
+            SendMessage("/in0");
+            return true;
+        }
+
+        public bool EnableTeamInspection()
+        {
+            IsTeamInspectionEnabled = true;
+            SendMessage("/in1");
+            return true;
+        }
+
     }
 }
